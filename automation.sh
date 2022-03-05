@@ -1,5 +1,17 @@
 #! /bin/bash
 
+# Cronjob
+
+cat /var/spool/cron/root| grep automation
+
+if [ $? -ne 0 ]
+then
+	echo "* 24 * * * /root/Automation_Project/automation.sh" >> /var/spool/cron/root
+else
+	echo "Cron entry exists"
+fi
+
+
 sudo apt update -y
 
 dpkg -l apache2
