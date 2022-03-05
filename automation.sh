@@ -1,5 +1,17 @@
 #! /bin/bash
 
+# Cronjob
+
+cat /var/spool/cron/root| grep automation
+
+if [ $? -ne 0 ]
+then
+	echo "* 24 * * * /root/Automation_Project/automation.sh" >> /var/spool/cron/root
+else
+	echo "Cron entry exists"
+fi
+
+
 sudo apt update -y
 
 dpkg -l apache2
@@ -15,10 +27,20 @@ if [ $? -ne 0 ]
 then
 	echo "service unable to start"
 else
-	filename=/tmp/mahij-http-logs-$(date '+%d%m%Y-%H%M%S').tar
-	short_file=mahij-http-logs-$(date '+%d%m%Y-%H%M%S').tar
+	timestamp=$(date '+%d%m%Y-%H%M%S')
+	short_file=mahij-http-logs-$timestamp.tar
+	filename=/tmp/$short_file
 	s3_bucket=upgrad-mahij
+	web_file=/var/www/html/inventory.html
 	tar -cf $filename /var/log/apache2/*.log
+	filesize=$(du -h $filename | cut -f 1)
+	if [ -f $web_file ]
+	then
+		echo "httpd-logs    $timestamp    tar	$filesize" >> $web_file
+	else
+		echo "<pre> LogType	DateCreated		Type	Size" > $web_file
+		echo "httpd-logs $timestamp tar $filesize" >> $web_file
+	fi
 	aws s3 cp $filename s3://${s3_bucket}/mahij-http-logs-$(date '+%d%m%Y-%H%M%S').tar
 fi
 
